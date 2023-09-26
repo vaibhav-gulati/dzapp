@@ -144,14 +144,14 @@ const handleCombineBalance = () => {
   };
 
   return (
-    <div className="App">
+    <div className="App ">
       <div className="disperse bg-gray-800 p-4">
         <div className="header flex justify-between mb-4">
           <div className="left-header text-white">
             Addresses with amounts
           </div>
           <div className="right-header">
-            <label htmlFor="file-upload" className="cursor-pointer">
+            <label htmlFor="file-upload" className=" text-white cursor-pointer">
               Upload File
             </label>
           </div>
@@ -182,7 +182,7 @@ const handleCombineBalance = () => {
           {duplicates.length > 0 && (<div>
           <span>
           <button
-            className="text-blue-600 ml-2"
+            className="text-red-600 ml-2"
             onClick={() => {
               setSelectedOption('keep');
               duplicates.forEach((duplicate) => {
@@ -190,10 +190,10 @@ const handleCombineBalance = () => {
               });
             }}
           >
-            Keep the first one
+            Keep the first one  |  
           </button>
           <button
-            className="text-blue-600 ml-2"
+            className="text-red-600 ml-2"
             onClick={() => {
               setSelectedOption('combine');
               duplicates.forEach((duplicate) => {
