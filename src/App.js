@@ -117,9 +117,9 @@ const handleCombineBalance = () => {
   setSelectedOption(null);
 };
 
-  const isButtonDisabled = () => {
-    return errorMessages.length > 0 || (duplicates.length > 0 && selectedOption === null);
-  };
+ const isButtonDisabled = () => {
+  return errorMessages.length > 0 || (duplicates.length > 0 && selectedOption === null) || inputValue.trim() === '';
+};
 
   const consolidatedDuplicateMessage = () => {
     const duplicatesMap = new Map();
