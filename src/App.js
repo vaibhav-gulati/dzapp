@@ -26,11 +26,11 @@ function App() {
         lineError += `Invalid Ethereum address`;
       }
       if (amount && !isValidAmount(amount)) {
-        lineError += `${lineError ? ' and ' : ''}Invalid amount`;
+        lineError += `${lineError ? ' and ' : ''}wrong amount`;
       }
 
       if (lineError) {
-        messages.push(`Line ${i + 1}: ${lineError}`);
+        messages.push(`Line ${i + 1} ${lineError}`);
       } else {
         if (addressMap.has(address)) {
           const duplicateIndex = addressMap.get(address);
@@ -135,12 +135,14 @@ const handleCombineBalance = () => {
     });
   
     const messages = [];
+    console.log(duplicatesMap)
     duplicatesMap.forEach((indexes, address) => {
-      const errorMessage = `${address} duplicate in Line: ${indexes.join(', ')}`;
+      const uniqueIndexes = [...new Set(indexes)]; 
+      const errorMessage = `${address} duplicate in Line: ${uniqueIndexes.join(', ')}`;
       messages.push(errorMessage);
     });
-  
-    return messages.join('\n'); 
+    
+    return messages.join('\n');
   };
 
   return (
@@ -182,7 +184,7 @@ const handleCombineBalance = () => {
           {duplicates.length > 0 && (<div>
           <span>
           <button
-            className="text-red-600 ml-2"
+            className="text-red-400 ml-2"
             onClick={() => {
               setSelectedOption('keep');
               duplicates.forEach((duplicate) => {
@@ -193,7 +195,7 @@ const handleCombineBalance = () => {
             Keep the first one  |  
           </button>
           <button
-            className="text-red-600 ml-2"
+            className="text-red-400 ml-2"
             onClick={() => {
               setSelectedOption('combine');
               duplicates.forEach((duplicate) => {
@@ -224,7 +226,7 @@ const handleCombineBalance = () => {
                 d="M12 9v2m0 4h.01m-6.938 4h13.856a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
               />
             </svg>
-            <div className="text-red-600">
+            <div className="text-red-400">
               {errorMessages.map((message, index) => (
                 <p key={index}>{message}</p>
               ))}
@@ -232,12 +234,30 @@ const handleCombineBalance = () => {
           </div>
         )}
       {duplicates.length > 0 && (
-  <div className="duplicates mt-4 p-4 border-gray-500 border rounded-lg  flex items-left">
-    <div className="text-red-600">
-      <p>
-        {consolidatedDuplicateMessage()}{' '}
-
-      </p>
+  <div className="duplicates mt-4 p-4 border-red-500 border rounded-lg  flex items-left">
+           <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="red"
+              className="w-6 h-6 mr-2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+    <div className="text-red-400">
+    <p>
+  {consolidatedDuplicateMessage().split('\n').map((message, index) => (
+    <span key={index}>
+      {message}
+      <br /> 
+    </span>
+  ))}
+</p>
     </div>
   </div>
 )}
