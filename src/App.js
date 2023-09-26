@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
-import './App.css'; // Import your custom stylesheet
+import './App.css'; 
 
 function App() {
   const [inputValue, setInputValue] = useState('');
   const [errorMessages, setErrorMessages] = useState([]);
   const [duplicates, setDuplicates] = useState([]);
+  const [selectedOption, setSelectedOption] = useState(null);
 
   const handleSubmit = () => {
-    // Reset error messages and duplicates
     setErrorMessages([]);
     setDuplicates([]);
-
-    // Split input by lines and validate each line
     const lines = inputValue.split('\n');
     const messages = [];
     const addressMap = new Map();
@@ -19,18 +17,14 @@ function App() {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
 
-      if (line === '') continue; // Skip empty lines
+      if (line === '') continue; 
 
-      const [address, amount] = line.split(/[\s,=]+/); // Split by spaces, commas, or equals signs
+      const [address, amount] = line.split(/[\s,=]+/);
 
       let lineError = '';
-
-      // Address length check
       if (address.length !== 42 || !address.startsWith('0x')) {
         lineError += `Invalid Ethereum address`;
       }
-
-      // Amount validation (you can customize this)
       if (amount && !isValidAmount(amount)) {
         lineError += `${lineError ? ' and ' : ''}Invalid amount`;
       }
@@ -38,13 +32,11 @@ function App() {
       if (lineError) {
         messages.push(`Line ${i + 1}: ${lineError}`);
       } else {
-        // Check for duplicate addresses
         if (addressMap.has(address)) {
-          // Duplicate address found
           const duplicateIndex = addressMap.get(address);
           setDuplicates((prevDuplicates) => [
             ...prevDuplicates,
-            { index1: duplicateIndex, index2: i },
+            { index1: duplicateIndex, index2: i, address },
           ]);
         } else {
           addressMap.set(address, i);
@@ -53,36 +45,102 @@ function App() {
     }
 
     if (messages.length === 0) {
-      // Process valid input here
-      alert('Input is valid. Processing...');
+      //success
     } else {
-      // Set error messages
       setErrorMessages(messages);
     }
   };
 
-  // Function to validate the amount (customize as needed)
   const isValidAmount = (amount) => {
-    const regex = /^[0-9]+$/; // Example: Allow only positive integers
+    const regex = /^[0-9]+$/; 
     return regex.test(amount);
   };
 
-  // Handle keeping the first duplicate
-  const handleKeepFirst = (index1, index2) => {
-    // Remove the second duplicate from duplicates state
-    setDuplicates((prevDuplicates) =>
-      prevDuplicates.filter((duplicate) => !(duplicate.index1 === index2 && duplicate.index2 === index1))
-    );
+  const handleKeepFirst = () => {
+    const lines = inputValue.split('\n');
+    const uniqueLines = [];
+    const uniqueAddresses = new Set();
+  
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line === '') continue; 
+  
+      const [address] = line.split(/[\s,=]+/); 
+  
+      if (!uniqueAddresses.has(address)) {
+        uniqueLines.push(line);
+        uniqueAddresses.add(address);
+      }
+    }
+  
+    setInputValue(uniqueLines.join('\n'));
+    setDuplicates([]); 
+    setSelectedOption(null);
   };
 
-  // Handle combining the balance of duplicates
-  const handleCombineBalance = (index1, index2) => {
-    // Implement your logic to combine the balance of duplicates here
-    // You can access the addresses at index1 and index2 to retrieve their amounts and update them as needed.
-    // For simplicity, I'm just removing the duplicates here.
-    setDuplicates((prevDuplicates) =>
-      prevDuplicates.filter((duplicate) => !(duplicate.index1 === index2 && duplicate.index2 === index1))
-    );
+const handleCombineBalance = () => {
+  const lines = inputValue.split('\n');
+  const addressMap = new Map();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line === '') continue; 
+    const [address, amount] = line.split(/[\s,=]+/);
+
+    if (addressMap.has(address)) {
+      const duplicateIndexes = addressMap.get(address);
+      const newAmount = Number(amount);
+
+      if (!isNaN(newAmount)) {
+        for (const duplicateIndex of duplicateIndexes) {
+          const currentAmount = Number(
+            lines[duplicateIndex].split(/[\s,=]+/)[1]
+          );
+          if (!isNaN(currentAmount)) {
+            const accumulatedAmount = newAmount + currentAmount;
+            lines[duplicateIndex] = `${address}=${accumulatedAmount}`;
+          }
+        }
+      }
+
+      lines[i] = ''; 
+    } else {
+      addressMap.set(address, [i]);
+    }
+  }
+
+  const resultLines = lines.filter((line) => line !== '');
+  const result = resultLines.join('\n');
+
+  setInputValue(result); 
+  setDuplicates([]);
+  setSelectedOption(null);
+};
+
+  const isButtonDisabled = () => {
+    return errorMessages.length > 0 || (duplicates.length > 0 && selectedOption === null);
+  };
+
+  const consolidatedDuplicateMessage = () => {
+    const duplicatesMap = new Map();
+  
+    duplicates.forEach((duplicate) => {
+      if (duplicatesMap.has(duplicate.address)) {
+        const existing = duplicatesMap.get(duplicate.address);
+        existing.push(duplicate.index1 + 1, duplicate.index2 + 1);
+        duplicatesMap.set(duplicate.address, existing);
+      } else {
+        duplicatesMap.set(duplicate.address, [duplicate.index1 + 1, duplicate.index2 + 1]);
+      }
+    });
+  
+    const messages = [];
+    duplicatesMap.forEach((indexes, address) => {
+      const errorMessage = `${address} duplicate in Line: ${indexes.join(', ')}`;
+      messages.push(errorMessage);
+    });
+  
+    return messages.join('\n'); 
   };
 
   return (
@@ -91,7 +149,6 @@ function App() {
         <div className="header flex justify-between mb-4">
           <div className="left-header text-white">
             Addresses with amounts
-            {/* <input type="file" id="file-upload" className="file-upload ml-2" /> */}
           </div>
           <div className="right-header">
             <label htmlFor="file-upload" className="cursor-pointer">
@@ -122,7 +179,35 @@ function App() {
           <div className="left-footer">
             <p className="text-white">Separated by ',' or '=' or ' '</p>
           </div>
-        </div>
+          {duplicates.length > 0 && (<div>
+          <span>
+          <button
+            className="text-blue-600 ml-2"
+            onClick={() => {
+              setSelectedOption('keep');
+              duplicates.forEach((duplicate) => {
+                handleKeepFirst(duplicate.index1, duplicate.index2, duplicate.address);
+              });
+            }}
+          >
+            Keep the first one
+          </button>
+          <button
+            className="text-blue-600 ml-2"
+            onClick={() => {
+              setSelectedOption('combine');
+              duplicates.forEach((duplicate) => {
+                handleCombineBalance(duplicate.index1, duplicate.index2, duplicate.address);
+              });
+            }}
+          >
+            Combine the balance
+          </button>
+        </span>
+          </div>
+      
+          )}
+            </div>
         {errorMessages.length > 0 && (
           <div className="error-messages mt-4 p-4 border-red-500 border rounded-lg  flex items-left">
             <svg
@@ -146,34 +231,24 @@ function App() {
             </div>
           </div>
         )}
-        {duplicates.length > 0 && (
-          <div className="duplicates mt-4 p-4 border-gray-500 border rounded-lg  flex items-left">
-            <div className="text-red-600">
-              {duplicates.map((duplicate, index) => (
-                <p key={index}>
-                  Duplicate addresses found at lines {duplicate.index1 + 1} and {duplicate.index2 + 1}.
-                  <button
-                    className="text-blue-600 ml-2"
-                    onClick={() => handleKeepFirst(duplicate.index1, duplicate.index2)}
-                  >
-                    Keep the first one
-                  </button>
-                  <button
-                    className="text-blue-600 ml-2"
-                    onClick={() => handleCombineBalance(duplicate.index1, duplicate.index2)}
-                  >
-                    Combine the balance
-                  </button>
-                </p>
-              ))}
-            </div>
-          </div>
-        )}
+      {duplicates.length > 0 && (
+  <div className="duplicates mt-4 p-4 border-gray-500 border rounded-lg  flex items-left">
+    <div className="text-red-600">
+      <p>
+        {consolidatedDuplicateMessage()}{' '}
+
+      </p>
+    </div>
+  </div>
+)}
+
         <div className=" mt-4 right-footer w-full">
           <button
             onClick={handleSubmit}
-            className={`text-white ${errorMessages.length > 0 ? 'bg-black' : 'bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800'} font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full`}
-            disabled={errorMessages.length > 0} // Disable the button when there are errors
+            className={`text-white ${
+              isButtonDisabled() ? 'bg-black' : 'bg-gradient-to-br from-purple-600 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-blue-300 dark:focus:ring-blue-800'
+            } font-medium rounded-lg text-sm px-5 py-2.5 text-center w-full`}
+            disabled={isButtonDisabled()}
           >
             Next
           </button>
